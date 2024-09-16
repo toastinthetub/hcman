@@ -14,7 +14,7 @@ pub struct LocalProduct {
 
 pub fn load_local_db(file_path: &str) -> Result<Vec<LocalProduct>, Box<dyn Error>> {
     if !Path::new(file_path).exists() {
-        return Ok(Vec::new()); // if file doesnt exist just return empty
+        return Ok(Vec::new()); // if file doesnt exist just return
     }
 
     let file = File::open(file_path)?;
