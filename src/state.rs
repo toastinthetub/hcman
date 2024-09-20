@@ -101,7 +101,11 @@ impl State {
                         .interact()
                         .unwrap();
 
-                    println!("{:?}", lib);
+                    if option == 1 {
+                        for object in self.wc.clone().unwrap().products.unwrap() {
+                            object.debug();
+                        }
+                    }
 
                     // --- TODO! ---
                 }

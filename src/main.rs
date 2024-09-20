@@ -126,7 +126,9 @@ async fn main() {
             state.test_pipeline().await;
         }
         false => {
-            println!("[] todo! sorry lol")
+            println!("[] todo! sorry lol");
+            println!("[] launching anyway in test mode");
+            state.test_pipeline().await;
         }
     }
 }

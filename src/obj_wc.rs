@@ -46,15 +46,13 @@ impl ObjWooCommerce {
             ckey,
         }
     }
-    pub async fn fetch_populate_products(
-        // fetches all products from WC store and populates self.ProductVec
-        &mut self,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let url = format!("{}/products", self.base_api);
+    // Fetches all products and populates self.products
+    pub async fn fetch_populate_products(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let url = format!("{}/products", self.base_api.trim_end_matches('/')); // trim trailing slashes
         let client = Client::new();
         let response = client
             .get(&url)
-            .basic_auth(self.ckey.clone(), Some(self.skey.clone()))
+            .basic_auth(&self.ckey, Some(&self.skey))
             .send()
             .await?;
 
@@ -63,18 +61,21 @@ impl ObjWooCommerce {
             self.products = Some(products);
             Ok(())
         } else {
-            Err(Box::new(response.error_for_status().unwrap_err()))
+            let status = response.status();
+            let error_msg = format!("Failed to fetch products: {}", status);
+            Err(error_msg.into())
         }
     }
+
+    // Just fetches and returns the products without populating the object
     pub async fn fetch_products_raw(
-        // just returns ProductVec
-        &mut self,
+        &self,
     ) -> Result<Vec<WooCommerceProduct>, Box<dyn std::error::Error>> {
-        let url = format!("{}/products", self.base_api);
+        let url = format!("{}/products", self.base_api.trim_end_matches('/')); // trim trailing slashes
         let client = Client::new();
         let response = client
             .get(&url)
-            .basic_auth(self.ckey.clone(), Some(self.skey.clone()))
+            .basic_auth(&self.ckey, Some(&self.skey))
             .send()
             .await?;
 
@@ -82,7 +83,9 @@ impl ObjWooCommerce {
             let products: Vec<WooCommerceProduct> = response.json().await?;
             Ok(products)
         } else {
-            Err(Box::new(response.error_for_status().unwrap_err()))
+            let status = response.status();
+            let error_msg = format!("Failed to fetch products: {}", status);
+            Err(error_msg.into())
         }
     }
 }

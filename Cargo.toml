@@ -12,3 +12,4 @@ dotenv = "0.15"
 csv = "1.1"
 tokio = { version = "1", features = ["full"] }
 dialoguer = "0.11.0"
+oauth1 = "1.0.0"
