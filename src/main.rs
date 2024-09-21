@@ -14,6 +14,15 @@ use std::{
 
 use crate::state::State;
 
+#[derive(Default, Debug)]
+pub struct BasicEnv {
+    wc_url: String,
+    wc_ck: String,
+    wc_sk: String,
+    csv_path: String,
+    json_path: String,
+}
+
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
@@ -88,21 +97,31 @@ async fn main() {
     let wc_api_url = env::var("WC_API_URL").expect("WC_API_URL not set");
     let wc_consumer_key = env::var("WC_CONSUMER_KEY").expect("WC_CONSUMER_KEY not set");
     let wc_consumer_secret = env::var("WC_CONSUMER_SECRET").expect("WC_CONSUMER_SECRET not set");
-    let mut csv_path: Option<String> = match env::var("CSV_PATH") {
+    let mut csv_path: String = match env::var("CSV_PATH") {
         Ok(str) => {
             file = str.clone();
-            Some(str)
+            str
         }
-        Err(_) => Some(file.clone()),
+        Err(_) => file.clone(),
     };
+    let local_db = env::var("LOCAL_DB").unwrap_or(String::from("no local db!"));
 
-    if csv_path != Some("".to_string()) {
-        csv_path = None;
+    if csv_path != "".to_string() {
+        csv_path = crate::state::CSV_PATH_FAILED.to_string();
     }
 
     let mut local_db: Option<String> = match env::var("LOCAL_DB") {
         Ok(str) => Some(str),
         Err(_) => Some(file.clone()),
+    };
+
+    let basic_auth = BasicEnv {
+        wc_url: wc_api_url.clone(),
+        wc_ck: wc_consumer_key.clone(),
+        wc_sk: wc_consumer_secret.clone(),
+
+        csv_path: csv_path,
+        json_path: local_db.unwrap().clone(),
     };
 
     // let logger_fn = |message: &str| println!("{:?}", message);
@@ -113,8 +132,8 @@ async fn main() {
         ckey: wc_consumer_key,
         test: test,
 
-        csv_path,
-        local_db,
+        csv_path: Some(csv_path),
+        local_db: local_db,
 
         vd: None,
         wc: None,
