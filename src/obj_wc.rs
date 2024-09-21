@@ -1,7 +1,7 @@
-use std::{fmt::format, iter::Product};
-
+use base64::encode;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ObjWooCommerce {
@@ -46,13 +46,29 @@ impl ObjWooCommerce {
             ckey,
         }
     }
+
+    // Helper to build the URL with base64-encoded basic auth credentials
+    fn build_authorization_header(&self) -> String {
+        let auth = format!("{}:{}", self.ckey, self.skey);
+        let encoded_auth = encode(auth); // base64 encode
+        format!("Basic {}", encoded_auth)
+    }
+
     // Fetches all products and populates self.products
     pub async fn fetch_populate_products(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let url = format!("{}/products", self.base_api.trim_end_matches('/')); // trim trailing slashes
+        let url = format!(
+            "{}/wp-json/wc/v3/products",
+            self.base_api.trim_end_matches('/')
+        ); // Use versioned endpoint
         let client = Client::new();
+
+        // Build the authorization header
+        let auth_header = self.build_authorization_header();
+
+        // Perform the request with the manually set Authorization header
         let response = client
             .get(&url)
-            .basic_auth(&self.ckey, Some(&self.skey))
+            .header("Authorization", auth_header) // Manually add the Basic Auth header
             .send()
             .await?;
 
@@ -67,15 +83,22 @@ impl ObjWooCommerce {
         }
     }
 
-    // Just fetches and returns the products without populating the object
+    // fetch and populate
     pub async fn fetch_products_raw(
         &self,
     ) -> Result<Vec<WooCommerceProduct>, Box<dyn std::error::Error>> {
-        let url = format!("{}/products", self.base_api.trim_end_matches('/')); // trim trailing slashes
+        let url = format!(
+            "{}/wp-json/wc/v3/products",
+            self.base_api.trim_end_matches('/')
+        );
         let client = Client::new();
+
+        // build proper auth header
+        let auth_header = self.build_authorization_header();
+
         let response = client
             .get(&url)
-            .basic_auth(&self.ckey, Some(&self.skey))
+            .header("Authorization", auth_header) // put basicauth header in myself
             .send()
             .await?;
 
@@ -92,33 +115,49 @@ impl ObjWooCommerce {
 
 impl WooCommerceProduct {
     pub fn debug(&self) -> String {
+        // dbg single WC product
+        let mut categories_str = String::new();
+        let mut images_str = String::new();
+        let mut stock_qty = String::new();
+
+        if !self.categories.is_empty() {
+            for category in self.categories.clone() {
+                categories_str.push_str(&format!("{}, ", category.name));
+            }
+        } else {
+            categories_str.push_str("N/A");
+        }
+
+        if !self.images.is_empty() {
+            for image in self.images.clone() {
+                images_str.push_str(&format!("{}, ", image.src));
+            }
+        } else {
+            images_str.push_str("N/A");
+        }
+
+        if self.stock_quantity.is_none() {
+            stock_qty.push_str("N/A");
+        } else {
+            stock_qty.push_str(&self.stock_quantity.unwrap().to_string());
+        }
+
         format!(
             "--- WOOCOMMERCE PRODUCT ---
 NAME: {}
 DESC: {}
 CATEGORIES: {:?}
 IMAGES URL: {:?}
-STOCK_QTTY: {:?}
+STOCK_QTTY: {}
 STATUS: {}
 SERIAL: {}",
             self.name,
             self.description,
-            self.categories,
-            self.images,
-            self.stock_quantity,
+            categories_str,
+            images_str,
+            stock_qty,
             self.status,
             self.sku
         )
     }
 }
-
-/*
-pub name: String,
-    pub regular_price: String,
-    pub description: String,
-    pub categories: Vec<Category>,
-    pub images: Vec<Image>,
-    pub stock_quantity: Option<u32>,
-    pub status: String,
-    pub sku: String,
-*/
