@@ -1,6 +1,8 @@
 use crate::{obj_vd::ObjVendoo, obj_wc::ObjWooCommerce};
 use dialoguer::{Input, Select};
 
+const CSV_PATH_FAILED: &str = "/home/fizbin/lair/proj/rust/hcrelay/asset/vendoo.csv";
+
 pub struct State {
     pub api_base: String,
     pub skey: String, // WC secret key, passed to ObjWc
@@ -14,7 +16,9 @@ pub struct State {
 }
 
 impl State {
-    pub async fn prod_pipeline(&mut self) {}
+    pub async fn prod_pipeline(&mut self) {
+        //
+    }
 }
 
 impl State {
@@ -27,6 +31,11 @@ impl State {
             self.ckey.clone(),
             self.skey.clone(),
         ));
+
+        self.vd = Some(
+            ObjVendoo::from_csv(&self.csv_path.clone().unwrap_or(CSV_PATH_FAILED.to_owned()))
+                .unwrap(),
+        );
 
         let _ = self.wc.clone().unwrap().fetch_populate_products().await;
         println!("wc populated");
@@ -52,10 +61,10 @@ impl State {
                     let _ = self.wc_options_term().await.unwrap();
                 }
                 1 => {
-                    println!("\n --- todo! ---")
+                    println!("todo!")
                 }
                 2 => {
-                    println!("\n--- todo! ---")
+                    let _ = self.vd_options_term().await.unwrap();
                 }
                 3 => {
                     println!("\nbye!");

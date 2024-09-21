@@ -47,7 +47,6 @@ impl ObjWooCommerce {
         }
     }
 
-    // Helper to build the URL with base64-encoded basic auth credentials
     fn build_authorization_header(&self) -> String {
         let auth = format!("{}:{}", self.ckey, self.skey);
         let encoded_auth = encode(auth); // base64 encode
@@ -59,13 +58,11 @@ impl ObjWooCommerce {
         let url = format!(
             "{}/wp-json/wc/v3/products",
             self.base_api.trim_end_matches('/')
-        ); // Use versioned endpoint
+        );
         let client = Client::new();
 
-        // Build the authorization header
         let auth_header = self.build_authorization_header();
 
-        // Perform the request with the manually set Authorization header
         let response = client
             .get(&url)
             .header("Authorization", auth_header) // Manually add the Basic Auth header
