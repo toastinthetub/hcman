@@ -11,10 +11,11 @@ use std::{
     env::{self, args},
     sync::{Arc, Mutex},
 };
+use utils::init_gui;
 
 use crate::state::State;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct BasicEnv {
     wc_url: String,
     wc_ck: String,
@@ -120,8 +121,8 @@ async fn main() {
         wc_ck: wc_consumer_key.clone(),
         wc_sk: wc_consumer_secret.clone(),
 
-        csv_path: csv_path,
-        json_path: local_db.unwrap().clone(),
+        csv_path: csv_path.clone(),
+        json_path: local_db.clone().unwrap(),
     };
 
     // let logger_fn = |message: &str| println!("{:?}", message);
@@ -148,7 +149,9 @@ async fn main() {
             println!("[] todo! sorry lol");
             println!("[] launching anyway in test mode");
             println!("[] just kidding we're doing sams OTHER test mode!");
-            let _ = state.sams_crazy_test_pipeline().await;
+            println!("[] double just kidding gui!");
+            let _ = init_gui();
+            // let _ = state.sams_crazy_test_pipeline().await;
         }
     }
 }
