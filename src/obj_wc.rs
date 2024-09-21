@@ -1,4 +1,5 @@
 use base64::encode;
+use regex::Regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -70,7 +71,16 @@ impl ObjWooCommerce {
             .await?;
 
         if response.status().is_success() {
-            let products: Vec<WooCommerceProduct> = response.json().await?;
+            // let products: Vec<WooCommerceProduct> = response.json().await?;
+            // self.products = Some(products);
+            // Ok(())
+            let body = response.text().await?;
+
+            let re = Regex::new(r"<[^>]*>").unwrap();
+            let sanitized_body = re.replace_all(&body, "").to_string();
+
+            let products: Vec<WooCommerceProduct> = serde_json::from_str(&sanitized_body)?;
+
             self.products = Some(products);
             Ok(())
         } else {
@@ -100,7 +110,15 @@ impl ObjWooCommerce {
             .await?;
 
         if response.status().is_success() {
-            let products: Vec<WooCommerceProduct> = response.json().await?;
+            let body = response.text().await?;
+
+            // sanitize response body
+            let re = Regex::new(r"<[^>]*>").unwrap();
+            let sanitized_body = re.replace_all(&body, "").to_string();
+
+            // deserialize json string sanitized
+            let products: Vec<WooCommerceProduct> = serde_json::from_str(&sanitized_body)?;
+            // let products: Vec<WooCommerceProduct> = response.json().await?;
             Ok(products)
         } else {
             let status = response.status();
