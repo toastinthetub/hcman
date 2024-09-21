@@ -128,7 +128,8 @@ async fn main() {
         false => {
             println!("[] todo! sorry lol");
             println!("[] launching anyway in test mode");
-            state.test_pipeline().await;
+            println!("[] just kidding we're doing sams OTHER test mode!");
+            let _ = state.sams_crazy_test_pipeline().await;
         }
     }
 }

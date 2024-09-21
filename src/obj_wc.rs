@@ -143,13 +143,15 @@ impl WooCommerceProduct {
             "--- WOOCOMMERCE PRODUCT ---
 NAME: {}
 DESC: {}
-CATEGORIES: {:?}
-IMAGES URL: {:?}
+PRICE: {}
+CATEGORIES: {}
+IMAGES URL: {}
 STOCK_QTTY: {}
 STATUS: {}
 SERIAL: {}",
             self.name,
             self.description,
+            self.regular_price,
             categories_str,
             images_str,
             stock_qty,

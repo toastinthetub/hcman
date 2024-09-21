@@ -1,4 +1,10 @@
-use crate::{obj_vd::ObjVendoo, obj_wc::ObjWooCommerce};
+use std::io::Write;
+
+use crate::{
+    local::{self, LocalObject, LocalSession},
+    obj_vd::ObjVendoo,
+    obj_wc::ObjWooCommerce,
+};
 use dialoguer::{Input, Select};
 
 const CSV_PATH_FAILED: &str = "/home/fizbin/lair/proj/rust/hcrelay/asset/vendoo.csv";
@@ -49,6 +55,7 @@ impl State {
                     "WooCommerce Options",
                     "Database Options",
                     "Vendoo Options",
+                    "TESTPIPELINE!",
                     "Exit",
                 ])
                 .default(0)
@@ -67,6 +74,9 @@ impl State {
                     let _ = self.vd_options_term().await.unwrap();
                 }
                 3 => {
+                    // todo!
+                }
+                4 => {
                     println!("\nbye!");
                     std::process::exit(0);
                     // break;
@@ -109,7 +119,7 @@ impl State {
                         .interact()
                         .unwrap();
 
-                    println!("{:?}", lib);
+                    // println!("{:?}", lib);
 
                     if option == 0 {
                         for object in lib
@@ -229,4 +239,109 @@ impl State {
         }
         return Ok(());
     }
+}
+
+impl State {
+    pub async fn sams_crazy_test_pipeline(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        press_enter_to_continue(String::from("create new wc and vendoo!"));
+
+        println!("[]creating new wc");
+        self.wc = Some(ObjWooCommerce::new_with_auth(
+            self.api_base.clone(),
+            self.ckey.clone(),
+            self.skey.clone(),
+        ));
+        println!("done");
+
+        println!("[]populating instance from store");
+        match self.wc.as_mut().unwrap().fetch_populate_products().await {
+            Ok(lib) => lib,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+        println!("done");
+
+        println!("[]populating lib var from store");
+        let lib = match self.wc.clone().unwrap().fetch_products_raw().await {
+            Ok(lib) => lib,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+
+        println!("done");
+
+        println!("[]creating new vd from csv");
+        self.vd = Some(
+            ObjVendoo::from_csv(&self.csv_path.clone().unwrap_or(CSV_PATH_FAILED.to_owned()))
+                .unwrap(),
+        );
+        println!("done");
+
+        press_enter_to_continue(String::from("debug raw woocommerce objects"));
+
+        let mut idx: i32 = 0;
+
+        for obj in lib {
+            println!("WC RAW OBJECT #{}:\n{}", idx, obj.debug());
+            idx += 1;
+        }
+
+        idx = 0;
+
+        press_enter_to_continue(String::from("debug *parsed* woocommerce objects"));
+
+        for obj in self.wc.clone().unwrap().products.unwrap() {
+            println!("WC PARSED OBJECT #{}\n{}", idx, obj.debug());
+            idx += 1;
+        }
+
+        idx = 0;
+
+        press_enter_to_continue(String::from("debug woocommerce entries"));
+
+        for obj in self.vd.clone().unwrap().products.unwrap() {
+            println!("VENDOO PARSED OBJECT #{}\n{}", idx, obj.debug());
+            idx += 1;
+        }
+
+        idx = 0;
+
+        press_enter_to_continue(String::from("create LocalSession"));
+
+        let mut local_session =
+            LocalSession::from_session(self.wc.clone().unwrap(), self.vd.clone().unwrap());
+
+        press_enter_to_continue(String::from("print out all wc_vec Titles, IDX and SKU's"));
+
+        let wp_len = local_session.local_wp.len();
+        let mut x = 0;
+        let vp_len = local_session.local_vp.len();
+        let mut y = 0;
+
+        for obj in local_session.local_wp {
+            println!("WC Object: #{}\nTitle: {}\nSKU: {}", x, obj.name, obj.sku);
+            x += 1;
+        }
+        println!("printed {} objects of {} in array", x, wp_len);
+
+        press_enter_to_continue(String::from("print out all vp_vec Titles, IDX and SKU'S"));
+
+        for obj in local_session.local_vp {
+            println!("VD Object: #{}\nTitle: {}\nSKU: {}", y, obj.name, obj.sku);
+            y += 1;
+        }
+
+        Ok(())
+    }
+}
+
+pub fn press_enter_to_continue(str: String) {
+    let mut s = String::new();
+    let mut stdout = std::io::stdout();
+    print!("press enter when ready to: {}", str);
+    stdout.flush().unwrap();
+    std::io::stdin().read_line(&mut s).unwrap();
+    std::mem::drop(s);
 }

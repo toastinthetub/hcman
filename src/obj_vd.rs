@@ -1,6 +1,7 @@
 use csv::ReaderBuilder;
 use serde::Deserialize;
 use std::error::Error;
+use std::fmt::format;
 use std::fs::File;
 use std::path::Path;
 
@@ -165,3 +166,61 @@ impl ObjVendoo {
         Ok(())
     }
 }
+
+impl VendooProduct {
+    pub fn debug(&self) -> String {
+        // debugs only what is relevant to WC and therefore LocalObject
+        let images = self.images.clone().unwrap_or(String::new());
+        let title = self.title.clone().unwrap_or(String::new());
+        let description = self.description.clone().unwrap_or(String::new());
+        let sku = self.sku.clone().unwrap_or(String::new());
+        let category = self.category.clone().unwrap_or(String::new());
+        let price = self.price.clone().unwrap_or(0.0);
+        let status = self.status.clone().unwrap_or(String::new());
+        let stock_qty = self.quantity_left.clone().unwrap_or(0);
+
+        let str: String = format!(
+            "--- VENDOO PRODUCT ---
+NAME: {}
+DESC: {}
+PRICE: {}
+CATEGORIES: {}
+IMAGES URL: {}
+STOCK_QTTY: {}
+STATUS: {}
+SERIAL: {}
+        ",
+            title, description, price, category, images, stock_qty, status, sku
+        );
+        return str;
+    }
+}
+
+/*
+ VENDOO OBJ FIELDS
+    pub images: Option<String>,         -- WC IMAGES[]
+    pub title: Option<String>,          -- WC NAME
+    pub description: Option<String>,    -- WC DESCRIPTION
+    pub brand: Option<String>,
+    pub condition: Option<String>,
+    pub primary_color: Option<String>,
+    pub secondary_color: Option<String>,
+    pub tags: Option<String>,
+    pub sku: Option<String>,            -- WC SKU
+    pub category: Option<String>,       -- WC CATEGORY[]
+    pub price: Option<f64>,             -- WC REGULAR PRICE
+    pub status: Option<String>,         -- WC STATUS
+    pub listed_date: Option<String>,
+    pub sold_date: Option<String>,
+    pub shipped_date: Option<String>,
+    pub listing_platforms: Option<String>,
+    pub sold_platform: Option<String>,
+    pub internal_notes: Option<String>,
+    pub price_sold: Option<f64>,
+    pub cost_of_goods: Option<f64>,
+    pub marketplace_fees: Option<f64>,
+    pub shipping_expenses: Option<f64>,
+    pub labels: Option<String>,
+    pub quantity_left: Option<u32>,     -- WC STOCK_QTY
+    pub quantity_sold: Option<u32>,
+*/
