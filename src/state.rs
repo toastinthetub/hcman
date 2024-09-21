@@ -242,7 +242,9 @@ impl State {
 }
 
 impl State {
-    pub async fn sams_crazy_test_pipeline(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn sams_super_cool_test_pipeline(
+        &mut self,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         press_enter_to_continue(String::from("create new wc and vendoo!"));
 
         println!("[]creating new wc");

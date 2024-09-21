@@ -24,8 +24,9 @@ pub struct BasicEnv {
     json_path: String,
 }
 
-#[tokio::main]
-async fn main() {
+// #[tokio::main]
+/*async*/
+fn main() {
     let args: Vec<String> = env::args().collect();
 
     let mut file: String = String::new(); // csv file
@@ -143,14 +144,14 @@ async fn main() {
     match state.test {
         true => {
             println!("[] starting in test mode!");
-            state.test_pipeline().await;
+            // state.test_pipeline().await;
         }
         false => {
             println!("[] todo! sorry lol");
             println!("[] launching anyway in test mode");
             println!("[] just kidding we're doing sams OTHER test mode!");
             println!("[] double just kidding gui!");
-            let _ = init_gui();
+            init_gui();
             // let _ = state.sams_crazy_test_pipeline().await;
         }
     }

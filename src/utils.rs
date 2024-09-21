@@ -1,5 +1,6 @@
 use dialoguer::Select;
 use dotenv::dotenv;
+use sha2::digest::consts::True;
 use std::default;
 use std::env;
 use std::error::Error;
@@ -9,6 +10,7 @@ use tokio::runtime::Runtime;
 
 use eframe::egui;
 
+use crate::state;
 use crate::BasicEnv;
 use crate::{
     local::{LocalObject, LocalSession},
@@ -16,12 +18,13 @@ use crate::{
     obj_wc::{ObjWooCommerce, WooCommerceProduct},
 };
 
-pub async fn init_gui() {
+pub fn init_gui() {
+    println!("init gui was in fact called.");
     let options = eframe::NativeOptions::default();
     eframe::run_native(
-        "Centered Text Box with Buttons Example",
+        "Vendoo -> WooCommerce Crosslister.",
         options,
-        Box::new(|_cc| Ok(Box::new(AppState::default()))),
+        Box::new(|_cc| Ok(Box::<AppState>::default())),
     )
     .unwrap_or_else(|e| eprintln!("Failed to start the GUI: {}", e));
 }
@@ -33,7 +36,7 @@ pub enum SelectMode {
     VD,
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct AppState {
     pub env: BasicEnv,
     // pub api_base: String,
@@ -50,7 +53,7 @@ pub struct AppState {
     // pub select_mode: Arc<Mutex<SelectMode>>,
     pub shared: Arc<Mutex<SharedData>>,
     pub wc_idx: i32,
-    pub vd_idk: i32,
+    pub vd_idx: i32,
 
     pub initialized: bool,
 }
@@ -127,15 +130,61 @@ impl AppState {
     }
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        dotenv().ok();
+        let wc_api_url = env::var("WC_API_URL").expect("WC_API_URL not set");
+        let wc_consumer_key = env::var("WC_CONSUMER_KEY").expect("WC_CONSUMER_KEY not set");
+        let wc_consumer_secret =
+            env::var("WC_CONSUMER_SECRET").expect("WC_CONSUMER_SECRET not set");
+        let mut csv_path: String = match env::var("CSV_PATH") {
+            Ok(str) => str,
+            Err(_) => String::from(state::CSV_PATH_FAILED),
+        };
+        let local_db = env::var("LOCAL_DB").unwrap_or(String::from("no local db!"));
+
+        let env = BasicEnv {
+            wc_url: wc_api_url.clone(),
+            wc_ck: wc_consumer_key.clone(),
+            wc_sk: wc_consumer_secret.clone(),
+
+            csv_path: csv_path.clone(),
+            json_path: local_db.clone(),
+        };
+
+        let rt = Runtime::new().unwrap();
+        let shared_data = rt.block_on(SharedData::build(env.clone()));
+
+        let shared = Arc::new(Mutex::new(shared_data));
+
+        let mut shared_data = shared.lock().unwrap();
+
+        shared_data.text_buffer.clear();
+        let _ = shared_data
+            .text_buffer
+            .write_str("WooCommerce DB over HTTP intialized, Vendoo DB deserialized from CSV.");
+
+        std::mem::drop(shared_data);
+
+        Self {
+            env,
+            shared,
+            wc_idx: 0,
+            vd_idx: 0,
+            initialized: true,
+        }
+    }
+}
+
 impl eframe::App for AppState {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         // Create a central panel to hold the main content
         egui::CentralPanel::default().show(ctx, |ui| {
-            if !self.initialized {
-                ui.label("INITIALIZING! FETCHING WC/VD INFORMATION & BUILDING SESSION");
-                self.initialize(self.env.clone()).unwrap();
-                self.initialized = true;
-            }
+            // if !self.initialized {
+            //     ui.label("INITIALIZING! FETCHING WC/VD INFORMATION & BUILDING SESSION");
+            //     self.initialize(self.env.clone()).unwrap();
+            //     self.initialized = true;
+            // }
 
             let mut shared = self.shared.lock().unwrap();
 
