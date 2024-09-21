@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io::Read;
 
 use hex::encode;
@@ -118,26 +119,31 @@ impl LocalSession {
             current_idx,
         }
     }
-
     pub fn compare_wc_vd(&self) -> (i32, Vec<LocalObject>) {
         let mut matched: i32 = 0;
         let mut need_posted: Vec<LocalObject> = Vec::new();
 
+        let wp_hashes: HashSet<_> = self
+            .local_wp
+            .iter()
+            .map(|wp_object| &wp_object.hash_hex)
+            .collect();
+
         for vp_object in self.local_vp.clone() {
-            for wp_object in self.local_wp.clone() {
-                if wp_object.hash_hex == vp_object.hash_hex {
+            if vp_object.status == "Active" {
+                if wp_hashes.contains(&vp_object.hash_hex) {
                     matched += 1;
                     println!(
                         "wc: {} matches vd: {}!",
-                        wp_object.hash_hex, vp_object.hash_hex
-                    )
+                        vp_object.hash_hex, vp_object.hash_hex
+                    );
                 } else {
-                    need_posted.push(vp_object.clone());
+                    need_posted.push(vp_object);
                 }
             }
         }
 
-        return (matched, need_posted);
+        (matched, need_posted)
     }
 }
 

@@ -7,7 +7,7 @@ use crate::{
 };
 use dialoguer::{Input, Select};
 
-const CSV_PATH_FAILED: &str = "/home/fizbin/lair/proj/rust/hcrelay/asset/vendoo.csv";
+pub const CSV_PATH_FAILED: &str = "/home/fizbin/lair/proj/rust/hcrelay/asset/vendoo.csv";
 
 pub struct State {
     pub api_base: String,
@@ -320,7 +320,7 @@ impl State {
         let vp_len = local_session.local_vp.len();
         let mut y = 0;
 
-        for obj in local_session.local_wp {
+        for obj in &local_session.local_wp {
             println!("WC Object: #{}\nTitle: {}\nSKU: {}", x, obj.name, obj.sku);
             x += 1;
         }
@@ -328,10 +328,20 @@ impl State {
 
         press_enter_to_continue(String::from("print out all vp_vec Titles, IDX and SKU'S"));
 
-        for obj in local_session.local_vp {
+        for obj in &local_session.local_vp {
             println!("VD Object: #{}\nTitle: {}\nSKU: {}", y, obj.name, obj.sku);
             y += 1;
         }
+        println!("printed {} objects of {} in array", y, vp_len);
+
+        press_enter_to_continue(String::from(
+            "compare WC to VD and find objects that need to be posted!",
+        ));
+
+        let (n, postable): (i32, Vec<LocalObject>) = local_session.compare_wc_vd();
+
+        println!("{} products need to be posted.", postable.len());
+        println!("{} matches; products that DONT need to be posted.", n);
 
         Ok(())
     }

@@ -126,6 +126,35 @@ impl ObjWooCommerce {
             Err(error_msg.into())
         }
     }
+    pub async fn post_product(
+        &self,
+        product: WooCommerceProduct,
+    ) -> Result<WooCommerceProduct, Box<dyn std::error::Error>> {
+        let url = format!(
+            "{}/wp-json/wc/v3/products",
+            self.base_api.trim_end_matches('/')
+        );
+        let client = Client::new();
+
+        // gotta build auth header
+        let auth_header = self.build_authorization_header();
+
+        let response = client
+            .post(&url)
+            .header("Authorization", auth_header) // auth!
+            .json(&product) // serialize
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let created_product: WooCommerceProduct = response.json().await?;
+            Ok(created_product)
+        } else {
+            let status = response.status();
+            let error_msg = format!("Failed to create product: {}", status);
+            Err(error_msg.into())
+        }
+    }
 }
 
 impl WooCommerceProduct {
