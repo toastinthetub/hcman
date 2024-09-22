@@ -1,5 +1,13 @@
 use dialoguer::Select;
 use dotenv::dotenv;
+use eframe::egui::Align;
+use eframe::egui::Button;
+use eframe::egui::CentralPanel;
+use eframe::egui::Layout;
+use eframe::egui::Pos2;
+use eframe::egui::Rect;
+use eframe::egui::TextEdit;
+use eframe::egui::Vec2;
 use sha2::digest::consts::True;
 use std::default;
 use std::env;
@@ -178,51 +186,61 @@ impl Default for AppState {
 
 impl eframe::App for AppState {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
-        // Create a central panel to hold the main content
+        let mut shared = self.shared.lock().unwrap();
+        let cpu_usage = frame.info().cpu_usage;
+        let size_av = ctx.available_rect();
+        let window_h = size_av.height();
+        let window_w = size_av.width();
+
+        let textbox_h = window_h * 0.6;
+        let textbox_w = window_w * 0.8;
+
+        let textbox_x = (window_w - textbox_w) / 2.0;
+        let textbox_y = (window_h - textbox_h) / 2.0;
+
+        let textbox_rect = Rect::from_min_size(
+            Pos2::new(textbox_x, textbox_y),
+            Vec2::new(textbox_w, textbox_h),
+        );
+
+        let lr_button_w = window_w * 0.025;
+        let lr_button_h = window_h * 0.6;
+
+        let lr_button_one_x = textbox_x - (lr_button_w) - 5.0;
+        let lr_button_two_x = textbox_x + textbox_w + 5.0;
+        let lr_button_y = textbox_y;
+
+        let lr_button_left_rect = Rect::from_min_size(
+            Pos2::new(lr_button_one_x, lr_button_y),
+            Vec2::new(lr_button_w, lr_button_h),
+        );
+
+        let lr_button_right_rect = Rect::from_min_size(
+            Pos2::new(lr_button_two_x, lr_button_y),
+            Vec2::new(lr_button_w, lr_button_h),
+        );
+
         egui::CentralPanel::default().show(ctx, |ui| {
-            // if !self.initialized {
-            //     ui.label("INITIALIZING! FETCHING WC/VD INFORMATION & BUILDING SESSION");
-            //     self.initialize(self.env.clone()).unwrap();
-            //     self.initialized = true;
-            // }
+            // ui.disable();
+            ui.put(
+                // put textbox in center taking up 80%w 60%h
+                textbox_rect,
+                TextEdit::multiline(&mut shared.text_buffer)
+                    .desired_width(textbox_w)
+                    .desired_rows(20)
+                    .interactive(false),
+            );
+            let button_lr_left = ui.put(lr_button_left_rect, Button::new("<"));
+            let button_lr_right = ui.put(lr_button_right_rect, Button::new(">"));
 
-            let mut shared = self.shared.lock().unwrap();
-
-            // Top row: evenly spaced 4 buttons
-            ui.horizontal(|ui| {
-                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                    ui.spacing_mut().item_spacing.x = ui.available_width() / 6.0; // Spacing
-                    for i in 1..=4 {
-                        if ui.button(format!("Top Button {}", i)).clicked() {
-                            println!("Top Button {} clicked", i);
-                        }
-                    }
-                });
-            });
-
-            ui.add_space(20.0);
-
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.horizontal(|ui| {
-                    // Left button
-                    if ui.button("Left Button").clicked() {
-                        println!("Left Button clicked");
-                    }
-
-                    // Centered read-only text
-                    ui.add(
-                        egui::TextEdit::multiline(&mut shared.text_buffer)
-                            .desired_width(300.0)
-                            .desired_rows(3)
-                            .interactive(false),
-                    );
-
-                    // Right button
-                    if ui.button("Right Button").clicked() {
-                        println!("Right Button clicked");
-                    }
-                });
-            });
+            if button_lr_left.clicked() {
+                shared.text_buffer.clear();
+                shared.text_buffer.push_str("you clicked the left button!");
+            }
+            if button_lr_right.clicked() {
+                shared.text_buffer.clear();
+                shared.text_buffer.push_str("you clicked the right button!");
+            }
         });
     }
 }
