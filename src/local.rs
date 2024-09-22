@@ -297,4 +297,50 @@ impl LocalObject {
             sku: self.sku.clone(),
         }
     }
+    pub fn debug(&self) -> String {
+        let str = format!(
+            "SIG: {},
+HASH: {},
+NAME/TITLE: {},
+REG PRICE: {},
+DESCRIPTION: {},
+CATEGORIES: {},
+IMAGES: {:?},
+STOCK-QTTY: {},
+STATUS: {},
+SKU: {}
+        ",
+            match self.sig {
+                Sig::WC => {
+                    String::from("WooCommerce sig")
+                }
+                Sig::VD => {
+                    String::from("Vendoo sig")
+                }
+            },
+            self.hash_hex,
+            self.name,
+            self.regular_price,
+            self.description,
+            self.categories,
+            self.images,
+            self.stock_quantity.unwrap_or(0),
+            self.status,
+            self.sku
+        );
+        str
+    }
+    /*
+    pub sig: Sig,
+        pub hash_hex: String,
+        pub name: String,
+        pub regular_price: String,
+        pub description: String,
+        pub categories: String,
+        pub images: Vec<String>,
+        pub stock_quantity: Option<u32>,
+        pub status: String,
+        pub sku: String,
+
+     */
 }

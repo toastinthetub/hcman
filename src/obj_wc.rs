@@ -155,6 +155,10 @@ impl ObjWooCommerce {
             Err(error_msg.into())
         }
     }
+    pub fn get_length(&self) -> i32 {
+        let length = self.products.as_ref().unwrap().len();
+        length as i32
+    }
 }
 
 impl WooCommerceProduct {

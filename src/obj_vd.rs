@@ -165,6 +165,11 @@ impl ObjVendoo {
 
         Ok(())
     }
+
+    pub fn get_length(&self) -> i32 {
+        let len = self.products.as_ref().unwrap().len() as i32;
+        len
+    }
 }
 
 impl VendooProduct {

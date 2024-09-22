@@ -43,6 +43,7 @@ pub enum SelectMode {
     #[default]
     WC,
     VD,
+    LP,
 }
 
 #[derive(Debug)]
@@ -71,9 +72,11 @@ pub struct AppState {
 pub struct SharedData {
     pub vd: Option<ObjVendoo>,
     pub wc: Option<ObjWooCommerce>,
+    pub local_session: Option<LocalSession>,
 
     pub text_buffer: String,
     pub select_mode: SelectMode,
+    pub local_init: bool,
 }
 
 impl SharedData {
@@ -87,12 +90,16 @@ impl SharedData {
         text_buffer.push_str("WooCommerce lib constructed from HTTP...\n");
 
         let select_mode = SelectMode::WC;
+        let local_init: bool = false;
 
         Self {
             vd: Some(vd),
             wc: Some(wc),
+            local_session: None,
+
             text_buffer,
             select_mode,
+            local_init,
         }
     }
 }
@@ -198,6 +205,8 @@ impl Default for AppState {
     }
 }
 
+// TODO LOTS OF THINGS
+
 impl eframe::App for AppState {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         let mut shared = self.shared.lock().unwrap();
@@ -235,10 +244,44 @@ impl eframe::App for AppState {
             Vec2::new(lr_button_w, lr_button_h),
         );
 
-        match shared.select_mode {
-            SelectMode::WC => {}
-            SelectMode::VD => todo!(),
-        }
+        let switch_mode_wc_button_w = textbox_w / 3.0 + (lr_button_w / 2.0);
+        let swtich_mode_wc_button_h = window_h * 0.025;
+
+        let switch_mode_wc_button_x = textbox_x - lr_button_w - 5.0;
+        let switch_mode_wc_button_y = textbox_y + textbox_h + 5.0;
+
+        let switch_mode_wc_button_rect = Rect::from_min_size(
+            Pos2::new(switch_mode_wc_button_x, switch_mode_wc_button_y),
+            Vec2::new(switch_mode_wc_button_w, swtich_mode_wc_button_h),
+        );
+
+        let switch_mode_vd_button_w = textbox_w / 3.0;
+        let switch_mode_vd_button_h = window_h * 0.025;
+
+        let switch_mode_vd_button_x = textbox_x + (textbox_w / 3.0);
+        // switch_mode_vd_button_y = switch_mode_wc_button_y;
+
+        let switch_mode_vd_button_rect = Rect::from_min_size(
+            Pos2::new(switch_mode_vd_button_x, switch_mode_wc_button_y),
+            Vec2::new(switch_mode_vd_button_w, switch_mode_vd_button_h),
+        );
+
+        let switch_mode_lp_button_w = switch_mode_wc_button_w;
+        let switch_mode_lp_button_h = window_h * 0.025;
+
+        let switch_mode_lp_button_x =
+            textbox_x + (2.0 * (textbox_w / 3.0)) + ((1.0 / 2.0) * lr_button_w) + 5.0;
+        // y same
+
+        let switch_mode_lp_button_rect = Rect::from_min_size(
+            Pos2::new(switch_mode_lp_button_x, switch_mode_wc_button_y),
+            Vec2::new(switch_mode_lp_button_w, switch_mode_lp_button_h),
+        );
+
+        // match shared.select_mode {
+        //     SelectMode::WC => {}
+        //     SelectMode::VD => todo!(),
+        // }
 
         // let cpu_usage_rect = Rect::from_min_size(
         //     Pos2::new(0.0, 0.0),
@@ -254,7 +297,7 @@ impl eframe::App for AppState {
             // ui.put(cpu_usage_rect, Label::new(cpu_usage_str));
             ui.label(cpu_usage_str);
 
-            ui.put(
+            let _ = ui.put(
                 // put textbox in center taking up 80%w 60%h
                 textbox_rect,
                 TextEdit::multiline(&mut shared.text_buffer)
@@ -265,13 +308,219 @@ impl eframe::App for AppState {
             let button_lr_left = ui.put(lr_button_left_rect, Button::new("<"));
             let button_lr_right = ui.put(lr_button_right_rect, Button::new(">"));
 
+            let switch_mode_wc_button =
+                ui.put(switch_mode_wc_button_rect, Button::new("TO WOOCOMM MODE"));
+
+            if switch_mode_wc_button.clicked() {
+                shared.select_mode = SelectMode::WC;
+                shared.text_buffer.clear();
+                // shared.text_buffer.push_str(string);
+            }
+
+            let switch_mode_vd_button =
+                ui.put(switch_mode_vd_button_rect, Button::new("TO VENDOO MODE"));
+
+            if switch_mode_vd_button.clicked() {
+                shared.select_mode = SelectMode::VD;
+                shared.text_buffer.clear();
+            }
+
+            let switch_mode_lp_button = ui.put(
+                switch_mode_lp_button_rect,
+                Button::new("SWITCH TO LP MODE (SERIALIZES ALL PRODUCTS)"),
+            );
+
+            match shared.select_mode {
+                SelectMode::WC => {
+                    let wc_button_w = window_w * 0.25;
+                    let wc_button_h = window_h * 0.025;
+                    let wc_button_x = (window_w / 2.0) - (wc_button_w / 2.0);
+                    let wc_button_y = textbox_y * 0.5;
+                    let wc_button_rect = Rect::from_min_size(
+                        Pos2::new(wc_button_x, wc_button_y),
+                        Vec2::new(wc_button_w, wc_button_h),
+                    );
+
+                    let wc_label_button = ui.put(wc_button_rect, Button::new("WOOCOMMERCE MODE."));
+
+                    if wc_label_button.clicked() {
+                        // do nothing
+                    }
+                }
+                SelectMode::VD => {
+                    let vd_button_w = window_w * 0.25;
+                    let vd_button_h = window_h * 0.025;
+                    let vd_button_x = (window_w / 2.0) - (vd_button_w / 2.0);
+                    let vd_button_y = textbox_y * 0.5;
+                    let vd_button_rect = Rect::from_min_size(
+                        Pos2::new(vd_button_x, vd_button_y),
+                        Vec2::new(vd_button_w, vd_button_h),
+                    );
+
+                    let vd_label_button = ui.put(vd_button_rect, Button::new("WOOCOMMERCE MODE."));
+
+                    if vd_label_button.clicked() {
+                        // do nothing, this button is meaningless.
+                    }
+                }
+                SelectMode::LP => {
+                    if !shared.local_init {
+                        shared.text_buffer.clear();
+                        shared
+                            .text_buffer
+                            .push_str("LocalSession has not yet been configured!");
+
+                        shared.select_mode = SelectMode::WC;
+                    } else {
+                        // do stuff.
+                    }
+                }
+            }
+
+            if switch_mode_lp_button.clicked() {
+                shared.select_mode = SelectMode::LP;
+                shared.text_buffer.clear();
+                shared
+                    .text_buffer
+                    .push_str("SERIALIZING ALL PRODUCTS INTO LocalSession...\n");
+
+                if !shared.local_init {
+                    shared.local_session = Some(crate::local::LocalSession::from_session(
+                        shared.wc.clone().unwrap(),
+                        shared.vd.clone().unwrap(),
+                    ));
+                    shared
+                        .text_buffer
+                        .push_str("PRODUCTS SERIALIZED INTO LOCALSESSION!");
+                }
+            }
+
             if button_lr_left.clicked() {
                 shared.text_buffer.clear();
                 shared.text_buffer.push_str("you clicked the left button!");
+
+                match shared.select_mode {
+                    SelectMode::WC => {
+                        if self.wc_idx <= 0 {
+                            self.wc_idx = 0;
+                        } else {
+                            self.wc_idx -= 1;
+                        }
+                        let prod =
+                            <std::option::Option<ObjWooCommerce> as Clone>::clone(&shared.wc)
+                                .unwrap()
+                                .products
+                                .unwrap()
+                                .get(self.wc_idx as usize)
+                                .unwrap_or(
+                                    &shared.wc.clone().unwrap().products.unwrap().get(0).unwrap(),
+                                )
+                                .clone();
+
+                        let str = prod.debug();
+                        shared.text_buffer.clear();
+                        shared.text_buffer.push_str(&str);
+                    }
+                    SelectMode::VD => {
+                        if self.vd_idx <= 0 {
+                            self.vd_idx = 0;
+                        } else {
+                            self.vd_idx -= 1;
+                        }
+
+                        let prod = shared
+                            .vd
+                            .as_ref()
+                            .unwrap()
+                            .products
+                            .as_ref()
+                            .unwrap()
+                            .get(self.vd_idx as usize)
+                            .unwrap();
+
+                        let str = prod.debug();
+                        shared.text_buffer.clear();
+                        shared.text_buffer.push_str(&str);
+                    }
+                    SelectMode::LP => {
+                        // TODO!
+                    }
+                }
             }
             if button_lr_right.clicked() {
                 shared.text_buffer.clear();
                 shared.text_buffer.push_str("you clicked the right button!");
+
+                match shared.select_mode {
+                    SelectMode::WC => {
+                        let len = shared.wc.as_ref().unwrap().get_length();
+
+                        if self.wc_idx >= len {
+                            self.wc_idx = len
+                        } else {
+                            self.wc_idx += 1;
+                        }
+
+                        let prod =
+                            <std::option::Option<ObjWooCommerce> as Clone>::clone(&shared.wc)
+                                .unwrap()
+                                .products
+                                .unwrap()
+                                .get(self.wc_idx as usize)
+                                .unwrap_or(
+                                    &shared
+                                        .wc
+                                        .clone()
+                                        .unwrap()
+                                        .products
+                                        .unwrap()
+                                        .get(len as usize - 1)
+                                        .unwrap(),
+                                )
+                                .clone();
+
+                        let str = prod.debug();
+                        shared.text_buffer.clear();
+                        shared.text_buffer.push_str(&str);
+                    }
+                    SelectMode::VD => {
+                        let len = shared.vd.as_ref().unwrap().get_length();
+
+                        if self.vd_idx >= len {
+                            self.vd_idx = len
+                        } else {
+                            self.vd_idx += 1;
+                        }
+
+                        let prod = shared
+                            .vd
+                            .as_ref()
+                            .unwrap()
+                            .products
+                            .as_ref()
+                            .unwrap()
+                            .get(self.vd_idx as usize)
+                            .unwrap();
+
+                        let str = prod.debug();
+                        shared.text_buffer.clear();
+                        shared.text_buffer.push_str(&str);
+                    }
+                    SelectMode::LP => {
+                        let len = shared.local_session.as_ref().unwrap().local_wp.len() as i32;
+                        if self.vd_idx >= len {
+                            self.vd_idx = len
+                        } else {
+                            self.vd_idx += 1;
+                        }
+
+                        // if let Some(local_session) = shared.local_session {
+                        //     local_session
+                        // } else {
+                        //     shared.select_mode = SelectMode::WC;
+                        // }
+                    }
+                }
             }
         });
     }
