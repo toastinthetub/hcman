@@ -3,6 +3,7 @@ use dotenv::dotenv;
 use eframe::egui::Align;
 use eframe::egui::Button;
 use eframe::egui::CentralPanel;
+use eframe::egui::Label;
 use eframe::egui::Layout;
 use eframe::egui::Pos2;
 use eframe::egui::Rect;
@@ -77,11 +78,14 @@ pub struct SharedData {
 
 impl SharedData {
     pub async fn build(env: BasicEnv) -> Self {
+        let mut text_buffer = String::new();
         let mut vd = ObjVendoo::from_csv(&env.csv_path).unwrap();
+        text_buffer.push_str("Vendoo lib constructed from CSV...\n");
         let mut wc = ObjWooCommerce::new_with_auth(env.wc_url, env.wc_ck, env.wc_sk);
+        text_buffer.push_str("WooCommerce obj constructed with auth...\n");
         wc.fetch_populate_products().await.unwrap();
+        text_buffer.push_str("WooCommerce lib constructed from HTTP...\n");
 
-        let text_buffer = String::new();
         let select_mode = SelectMode::WC;
 
         Self {
@@ -95,17 +99,19 @@ impl SharedData {
 
 impl AppState {
     pub fn initialize(&mut self, env: BasicEnv) -> Result<(), Box<dyn Error>> {
+        let mut str = String::new();
+
         let rt = Runtime::new().unwrap();
+        str.push_str("async ryntime created...\n");
         let shared_data = rt.block_on(SharedData::build(env));
-
+        str.push_str("shared state constructed...\n");
         self.shared = Arc::new(Mutex::new(shared_data));
-
+        str.push_str("shared state wrapped in Arc<Mutex<>>");
         let mut shared = self.shared.lock().unwrap();
+        str.push_str("shared state locked and safely mutable...");
+        str.push_str("initialized!");
 
-        shared.text_buffer.clear();
-        let _ = shared
-            .text_buffer
-            .write_str("WooCommerce DB over HTTP intialized, Vendoo DB deserialized from CSV.");
+        let _ = shared.text_buffer.push_str(&str);
         // let wc = self.wc.lock().unwrap();
         // let vd = self.vd.lock().unwrap();
 
@@ -141,6 +147,9 @@ impl AppState {
 impl Default for AppState {
     fn default() -> Self {
         dotenv().ok();
+
+        let mut str = String::new();
+
         let wc_api_url = env::var("WC_API_URL").expect("WC_API_URL not set");
         let wc_consumer_key = env::var("WC_CONSUMER_KEY").expect("WC_CONSUMER_KEY not set");
         let wc_consumer_secret =
@@ -161,16 +170,21 @@ impl Default for AppState {
         };
 
         let rt = Runtime::new().unwrap();
+        str.push_str("async ryntime created...\n");
         let shared_data = rt.block_on(SharedData::build(env.clone()));
-
+        str.push_str("shared state constructed...\n");
         let shared = Arc::new(Mutex::new(shared_data));
-
+        str.push_str("shared state wrapped in Arc<Mutex<>>\n");
         let mut shared_data = shared.lock().unwrap();
+        str.push_str("shared state locked and safely mutable...\n");
+        str.push_str("initialized!");
 
-        shared_data.text_buffer.clear();
-        let _ = shared_data
-            .text_buffer
-            .write_str("WooCommerce DB over HTTP intialized, Vendoo DB deserialized from CSV.");
+        shared_data.text_buffer.push_str(&str);
+
+        // shared_data.text_buffer.clear();
+        // let _ = shared_data
+        //     .text_buffer
+        //     .write_str("WooCommerce DB over HTTP intialized, Vendoo DB deserialized from CSV.");
 
         std::mem::drop(shared_data);
 
@@ -187,7 +201,8 @@ impl Default for AppState {
 impl eframe::App for AppState {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         let mut shared = self.shared.lock().unwrap();
-        let cpu_usage = frame.info().cpu_usage;
+        let cpu_usage = frame.info().cpu_usage.unwrap_or(0.0);
+        let cpu_usage_str = format!("CPU Usage: {}%", cpu_usage);
         let size_av = ctx.available_rect();
         let window_h = size_av.height();
         let window_w = size_av.width();
@@ -220,8 +235,25 @@ impl eframe::App for AppState {
             Vec2::new(lr_button_w, lr_button_h),
         );
 
+        match shared.select_mode {
+            SelectMode::WC => {}
+            SelectMode::VD => todo!(),
+        }
+
+        // let cpu_usage_rect = Rect::from_min_size(
+        //     Pos2::new(0.0, 0.0),
+        //     Vec2::new(
+        //         cpu_usage_str.len() as f32,
+        //         cpu_usage_str.lines().count() as f32,
+        //     ),
+        // );
+
         egui::CentralPanel::default().show(ctx, |ui| {
             // ui.disable();
+
+            // ui.put(cpu_usage_rect, Label::new(cpu_usage_str));
+            ui.label(cpu_usage_str);
+
             ui.put(
                 // put textbox in center taking up 80%w 60%h
                 textbox_rect,
